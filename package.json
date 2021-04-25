@@ -1,0 +1,27 @@
+{
+  "name": "jsonrpc-controller",
+  "version": "1.0.0",
+  "main": "lib/controller.js",
+  "license": "Apache-2.0",
+  "description": "Small, simple framework for JSON-RPC 2.0 APIs as a Koa middleware.",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/vidderhorn/jsonrpc-controller.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/koa": "^2.13.1",
+    "@types/raw-body": "^2.3.0",
+    "koa": "^2.13.1",
+    "typescript": "^4.1.2"
+  },
+  "scripts": {
+    "build": "tsc --paths null",
+    "clean": "rm -rf lib"
+  },
+  "dependencies": {
+    "raw-body": "^2.4.1"
+  }
+}
