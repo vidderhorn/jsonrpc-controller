@@ -3,19 +3,26 @@ import { Request, Success, Failure, Error } from "jsonrpc-types";
 import getRawBody from "raw-body";
 
 export interface Controller<S> {
-  <P>(name: string): ActionBuilder<P, S>;
+  <P = any>(name: string): MethodBuilder<P, S>;
   route(): Middleware<S>;
 }
 
-export default function controller<S = any>(): Controller<S> {
-  const actions: Actions<S> = {};
-  actionBuilder.route = route;
-  return actionBuilder;
+export interface Options {
+  /** The byte limit of the body. This is the number of bytes or any string format supported by bytes, for example 1000, '500kb' or '3mb'. */
+  maxRequestBytes: number | string | null | undefined;
+}
 
-  function actionBuilder<P>(name: string) {
-    const action = new ActionBuilder<P, S>(name);
-    actions[name] = action;
-    return action;
+/** Create a controller. Call the controller as a function to add a method. Call .route() to access the middleware for the controller. */
+export function controller<S = any>(options?: Options): Controller<S> {
+  options = Object.assign({}, controller.defaults, options);
+  const methods: MethodTable<S> = {};
+  methodBuilder.route = route;
+  return methodBuilder;
+
+  function methodBuilder<P>(name: string) {
+    const method = new MethodBuilder<P, S>(name);
+    methods[name] = method;
+    return method;
   }
 
   function route(): Middleware<S> {
@@ -23,17 +30,17 @@ export default function controller<S = any>(): Controller<S> {
       try {
         const raw = await getRawBody(context.req, {
           length: context.get("Content-Length"),
-          limit: "1mb",
-          encoding: "utf8"
+          limit: options?.maxRequestBytes,
+          encoding: "utf8",
         });
         const request = JSON.parse(raw) as Request;
-        const action = actions[request.method];
-        if (!action || !action.reply) {
+        const method = methods[request.method];
+        if (!method || !method.reply) {
           fail(context, Error.methodNotFound, request.id);
           return;
         }
         try {
-          for (const filter of action.filters) {
+          for (const filter of method.filters) {
             const pass = Promise.resolve(filter(request.params, context.state, context));
             if (!pass) {
               fail(context, Error.invalidParams, request.id);
@@ -41,7 +48,7 @@ export default function controller<S = any>(): Controller<S> {
             }
           }
           const result = await Promise.resolve(
-            action.reply(request.params, context.state, context));
+            method.reply(request.params, context.state, context));
           context.type = "json";
           context.body = JSON.stringify(<Success>{
             jsonrpc: "2.0",
@@ -61,6 +68,14 @@ export default function controller<S = any>(): Controller<S> {
   }
 }
 
+export module controller {
+  export let defaults: Options = {
+    maxRequestBytes: "1mb",
+  };
+}
+
+export default controller;
+
 function fail(context: Context, code: number, id?: string | number) {
   context.body = JSON.stringify(<Failure>{
     jsonrpc: "2.0",
@@ -72,7 +87,7 @@ function fail(context: Context, code: number, id?: string | number) {
   });
 }
 
-export class ActionBuilder<P, S> {
+export class MethodBuilder<P, S> {
   name: string;
   balls: string[] = [];
   filters: Filter<P, S>[] = [];
@@ -82,7 +97,7 @@ export class ActionBuilder<P, S> {
     this.name = name;
   }
 
-  filter(filter: Filter<P, S>): ActionBuilder<P, S> {
+  filter(filter: Filter<P, S>): MethodBuilder<P, S> {
     this.filters.push(filter);
     return this;
   }
@@ -92,8 +107,8 @@ export class ActionBuilder<P, S> {
   }
 }
 
-interface Actions<S> {
-  [name: string]: ActionBuilder<any, S> | undefined
+interface MethodTable<S> {
+  [name: string]: MethodBuilder<any, S> | undefined
 }
 
 export type Exec<P, S> = (p: P, s: S, c: Context<S>) => any;
