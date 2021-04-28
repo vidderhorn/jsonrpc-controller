@@ -50,8 +50,9 @@ import Koa from "koa";
 import Router from "koa-router";
 import Database from "@your_project/database";
 import State from "@your_project/state";
-import taskController from "./controllers/taskController";
+import { authMiddleware } from "@your_project/middleware";
 import { AuthzHelper } from "@your_project/helpers";
+import taskController from "./controllers/taskController";
 
 async function start() {
   const database = await Database.connect();
@@ -60,8 +61,9 @@ async function start() {
   
   const server = new Koa<State>();
   const router = new Router<State>();
+  const authenticate = authMiddleware(database);
 
-  router.post("/api/tasks", taskController(tasks, authorize));
+  router.post("/api/tasks", authenticate, taskController(tasks, authorize));
 
   server.use(router.routes());
   server.listen(80);
