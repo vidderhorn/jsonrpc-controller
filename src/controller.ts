@@ -3,7 +3,9 @@ import { Request, Success, Failure, Error } from "jsonrpc-types";
 import getRawBody from "raw-body";
 
 export interface Controller<S> {
+  /** Construct a method with the given names. */
   <P = any>(name: string): MethodBuilder<P, S>;
+  /** Return a Koa middleware to handle method calls. */
   route(): Middleware<S>;
 }
 
@@ -97,11 +99,13 @@ export class MethodBuilder<P, S> {
     this.name = name;
   }
 
+  /** Filter this request. Functions returning false will cause the request to fail. */
   filter(filter: Filter<P, S>): MethodBuilder<P, S> {
     this.filters.push(filter);
     return this;
   }
 
+  /** Execute the method. */
   exec(reply: Exec<P, S>) {
     this.reply = reply;
   }
