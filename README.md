@@ -14,7 +14,7 @@ import TaskService from "@your_project/tasks";
 import { AuthzHelper } from "@your_project/helpers";
 
 export default function taskController(tasks: TaskService, authorize: AuthzHelper) {
-  const action = controller<State>;
+  const action = controller<State>();
 
   // action with no type checking
   action("read")

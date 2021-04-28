@@ -14,6 +14,10 @@ export interface Options {
   maxRequestBytes: number | string | null | undefined;
 }
 
+interface MethodTable<S> {
+  [name: string]: MethodBuilder<any, S> | undefined
+}
+
 /** Create a controller. Call the controller as a function to add a method. Call .route() to access the middleware for the controller. */
 export function controller<S = any>(options?: Options): Controller<S> {
   options = Object.assign({}, controller.defaults, options);
@@ -89,6 +93,11 @@ function fail(context: Context, code: number, id?: string | number) {
   });
 }
 
+export type Exec<P, S> = (p: P, s: S, c: Context<S>) => any;
+export type Filter<P, S> = SyncFilter<P, S> | AsyncFilter<P, S>;
+export type SyncFilter<P, S> = (p: P, s: S, c: Context<S>) => boolean;
+export type AsyncFilter<P, S> = (p: P, s: S, c: Context<S>) => Promise<boolean>;
+
 export class MethodBuilder<P, S> {
   name: string;
   balls: string[] = [];
@@ -110,12 +119,3 @@ export class MethodBuilder<P, S> {
     this.reply = reply;
   }
 }
-
-interface MethodTable<S> {
-  [name: string]: MethodBuilder<any, S> | undefined
-}
-
-export type Exec<P, S> = (p: P, s: S, c: Context<S>) => any;
-export type Filter<P, S> = SyncFilter<P, S> | AsyncFilter<P, S>;
-export type SyncFilter<P, S> = (p: P, s: S, c: Context<S>) => boolean;
-export type AsyncFilter<P, S> = (p: P, s: S, c: Context<S>) => Promise<boolean>;
